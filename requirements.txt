@@ -6,3 +6,4 @@ datetime
 numpy
 fsspec
 s3fs
+openpyxl
