@@ -471,7 +471,7 @@ if send_sd:
                         sheet_name=f'MotorAire_{airp}',
                         converters={'Pista': str.upper},
                         usecols=[
-                            'Indicativo, Fecha/Hora UTC', 'Pista', 'Causa'
+                            'Indicativo', 'Fecha/Hora UTC', 'Pista', 'Causa'
                             ],
                         storage_options={
                             'key': AWS_ACCESS_KEY_ID,
@@ -491,7 +491,7 @@ if send_sd:
                 st.session_state.frus = frus.copy()
             except ValueError:
                 frus = pd.DataFrame(
-                    columns=['HoraFrustrada', 'Causa1', 'Causa2']
+                    columns=['Indicativo, HoraFrustrada', 'Causa1', 'Causa2']
                     )
                 st.warning('Enaire no cubre este aeropuerto')
         st.subheader('Datos de frustradas obtenidos')
