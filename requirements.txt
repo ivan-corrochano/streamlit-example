@@ -1,4 +1,11 @@
 altair
 pandas
 streamlit
-s3fs==2022.8.2
+urllib
+time
+boto3
+zipfile
+io
+datetime
+locale
+numpy
