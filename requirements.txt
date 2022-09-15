@@ -4,3 +4,4 @@ streamlit
 boto3
 datetime
 numpy
+fsspec
