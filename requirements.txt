@@ -2,7 +2,6 @@ altair
 pandas
 streamlit
 boto3
-io
 datetime
 locale
 numpy
