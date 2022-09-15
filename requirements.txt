@@ -1,7 +1,6 @@
 altair
 pandas
 streamlit
-urllib
 time
 boto3
 zipfile
