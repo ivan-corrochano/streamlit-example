@@ -3,5 +3,4 @@ pandas
 streamlit
 boto3
 datetime
-locale
 numpy
