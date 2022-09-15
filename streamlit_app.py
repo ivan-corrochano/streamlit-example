@@ -8,7 +8,6 @@ from time import sleep
 from boto3 import Session
 from zipfile import ZipFile
 import io
-import s3fs
 import datetime as dt
 import locale
 import numpy as np
@@ -145,9 +144,6 @@ locale.setlocale(locale.LC_ALL, '')
 # Read secrets
 AWS_ACCESS_KEY_ID = st.secrets['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = st.secrets['AWS_SECRET_ACCESS_KEY']
-
-# Create connection object
-fs = s3fs.S3FileSystem(anon=False)
 
 # Read luces.csv
 if 'lig' not in st.session_state:
@@ -459,7 +455,9 @@ if send_sd:
                     )
                 .fillna(0)
                 )
-            metar_rwy = merged_metar.loc[merged_metar['PistaArr'] == 'rwy']
+            metar_rwy = merged_metar.loc[
+                merged_metar['PistaArr'] == f'{airp}-rwy'
+                ]
             st.session_state.merged_metar = merged_metar.copy()
             st.session_state.metar_rwy = metar_rwy.copy()
         st.subheader('Cruce de Palestra y METAR realizado')
@@ -472,7 +470,9 @@ if send_sd:
                         'frustradas diario de novedades.xlsx',
                         sheet_name=f'MotorAire_{airp}',
                         converters={'Pista': str.upper},
-                        usecols=['Fecha/Hora UTC', 'Pista', 'Causa'],
+                        usecols=[
+                            'Indicativo, Fecha/Hora UTC', 'Pista', 'Causa'
+                            ],
                         storage_options={
                             'key': AWS_ACCESS_KEY_ID,
                             'secret': AWS_SECRET_ACCESS_KEY
