@@ -64,7 +64,7 @@ def get_METAR(set_station, dates):
                 lambda x: rwy if x >= 10 else rwy_opp
                 )
             )
-        .dropna(subset='MetarTime')
+        .dropna(subset=['MetarTime'])
         .sort_values('MetarTime')
         )
     data_df['Clouds'] = data_df['Ceil'].str[0]
