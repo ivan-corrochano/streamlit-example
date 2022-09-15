@@ -456,7 +456,7 @@ if send_sd:
                 .fillna(0)
                 )
             metar_rwy = merged_metar.loc[
-                merged_metar['PistaArr'] == f'{airp}-rwy'
+                merged_metar['PistaArr'] == f'{airp}-{rwy}'
                 ]
             st.session_state.merged_metar = merged_metar.copy()
             st.session_state.metar_rwy = metar_rwy.copy()
@@ -507,7 +507,10 @@ if send_sd:
                 frus = pd.DataFrame(
                     columns=['Indicativo, HoraFrustrada', 'Causa1', 'Causa2']
                     )
-                st.warning('Enaire no cubre este aeropuerto')
+                st.warning(
+                    'Enaire no cubre este aeropuerto o '
+                    'no hay datos disponibles'
+                    )
         st.subheader('Datos de frustradas obtenidos')
         st.session_state.down_st = True
         st.balloons()
