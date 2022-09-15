@@ -482,6 +482,20 @@ if send_sd:
                         'Fecha/Hora UTC': 'HoraFrustrada',
                         'Causa': 'Causa1'})
                     .loc[lambda df: df['Pista'] == rwy]
+                    .assign(
+                        HoraArribada=lambda df:
+                            pd.to_datetime(df['HoraFrustrada'])
+                        )
+                    .loc[lambda df:
+                         (df['HoraFrustrada'] >=
+                          dt.datetime.combine(
+                              dates[0], dt.datetime.min.time()
+                              )) &
+                         (df['HoraFrustrada'] <=
+                          dt.datetime.combine(
+                              dates[1], dt.datetime.max.time()
+                              ))
+                         ]
                     .drop('Pista', axis=1)
                     )
                 frus['Causa1'] = frus['Causa1'].str.split(':').str[0]
@@ -498,25 +512,26 @@ if send_sd:
         st.session_state.down_st = True
         st.balloons()
 
+
 if st.session_state.down_st:
+    with ZipFile(f'{st_title}.zip', 'w') as zipObj:
+        zipObj.writestr(
+            'configuracion.csv', convert_df(st.session_state.csv_config)
+            )
+        zipObj.writestr(
+            'metar_filtrado.csv', convert_df(st.session_state.merged_metar)
+            )
+        zipObj.writestr(
+            'metar_pista.csv', convert_df(st.session_state.metar_rwy)
+            )
+        zipObj.writestr(
+            'palestra.csv', convert_df(st.session_state.palestra_df)
+            )
+        zipObj.writestr(
+            'frustradas.csv', convert_df(st.session_state.frus)
+            )
+    st.session_state.zip = f'{st_title}.zip'
     with open(f'{st_title}.zip', 'rb') as file:
-        with ZipFile(f'{st_title}.zip', 'w') as zipObj:
-            zipObj.writestr(
-                'configuracion.csv', convert_df(st.session_state.csv_config)
-                )
-            zipObj.writestr(
-                'metar_filtrado.csv', convert_df(st.session_state.merged_metar)
-                )
-            zipObj.writestr(
-                'metar_pista.csv', convert_df(st.session_state.metar_rwy)
-                )
-            zipObj.writestr(
-                'palestra.csv', convert_df(st.session_state.palestra_df)
-                )
-            zipObj.writestr(
-                'frustradas.csv', convert_df(st.session_state.frus)
-                )
-            st.session_state.zip = f'{st_title}.zip'
         st.download_button(
             'Descargar ficheros', file, file_name=f'{st_title}.zip'
             )
