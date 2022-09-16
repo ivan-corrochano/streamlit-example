@@ -501,12 +501,6 @@ if SEND_SD:
                     .drop('Pista', axis=1)
                     [['Indicativo', 'HoraFrustrada', 'Causa1']]
                     )
-            except ValueError:
-                st.session_state.frus = pd.DataFrame(
-                    columns=['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']
-                    )
-                st.warning('Enaire no cubre este aeropuerto')
-            try:
                 frus['Compañia'] = frus['Indicativo'].str[:3]
                 frus['Causa1'] = frus['Causa1'].str.split(':').str[0]
                 frus[['Causa1', 'Causa2']] = (
@@ -521,10 +515,7 @@ if SEND_SD:
                 st.session_state.frus = pd.DataFrame(
                     columns=['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']
                     )
-                st.warning(
-                    'No hay datos de operaciones frustradas para las fechas '
-                    'solicitadas'
-                    )
+                st.warning('Sin datos disponibles')
         st.subheader('Datos de frustradas obtenidos')
         st.session_state.down_st = True
 
