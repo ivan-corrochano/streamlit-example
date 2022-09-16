@@ -505,7 +505,7 @@ if send_sd:
                               ))
                          ]
                     .drop('Pista', axis=1)
-                    [['Indicativo', 'HoraFrustrada', 'Causa1', 'Causa2']]
+                    [['Indicativo', 'HoraFrustrada', 'Causa1']]
                     )
             except ValueError:
                 st.session_state.frus = pd.DataFrame(
