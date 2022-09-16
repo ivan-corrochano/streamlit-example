@@ -424,14 +424,19 @@ if send_sd:
                 )
             st.session_state.palestra_df = palestra.copy()
 
-            count_pal = (
-                palestra
-                .groupby(['MetarTime', 'APC'], as_index=False).size()
-                .rename(columns={'size': 'Ops'})
-                .pivot(index='MetarTime', values='Ops', columns='APC')
-                .reset_index()
-                .fillna(0)
-                )
+            try:
+                count_pal = (
+                    palestra
+                    .groupby(['MetarTime', 'APC'], as_index=False).size()
+                    .rename(columns={'size': 'Ops'})
+                    .pivot(index='MetarTime', values='Ops', columns='APC')
+                    .reset_index()
+                    .fillna(0)
+                    )
+            except ValueError:
+                st.warning(
+                   'No hay datos de Palestra para las fechas solicitadas'
+                   )
         st.subheader('Datos de Palestra obtenidos')
 
         with st.spinner('Se cruza Palestra con los METAR'):
@@ -497,22 +502,28 @@ if send_sd:
                               ))
                          ]
                     .drop('Pista', axis=1)
+                    [['Indicativo', 'HoraFrustrada', 'Causa1', 'Causa2']]
                     )
             except ValueError:
                 st.session_state.frus = pd.DataFrame(
-                    columns=['Indicativo, HoraFrustrada', 'Causa1', 'Causa2']
+                    columns=['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']
                     )
                 st.session_state.frus = frus.copy()
                 st.warning('Enaire no cubre este aeropuerto')
             try:
+                frus['Compañia'] = frus['Indicativo'].str[:3]
                 frus['Causa1'] = frus['Causa1'].str.split(':').str[0]
                 frus[['Causa1', 'Causa2']] = (
                     frus['Causa1'].str.split('_', expand=True)
                     )
-                st.session_state.frus = frus.copy()
+                frus.drop('Indicativo', inplace=True)
+                st.session_state.frus = (
+                    frus[['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']]
+                    .copy()
+                    )
             except ValueError:
                 st.session_state.frus = pd.DataFrame(
-                    columns=['Indicativo, HoraFrustrada', 'Causa1', 'Causa2']
+                    columns=['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']
                     )
                 st.warning(
                     'No hay datos de operaciones frustradas para las fechas '
@@ -520,8 +531,6 @@ if send_sd:
                     )
         st.subheader('Datos de frustradas obtenidos')
         st.session_state.down_st = True
-        st.balloons()
-
 
 if st.session_state.down_st:
     with ZipFile(f'{st_title}.zip', 'w') as zipObj:
@@ -541,6 +550,7 @@ if st.session_state.down_st:
             'frustradas.csv', convert_df(st.session_state.frus)
             )
     st.session_state.zip = f'{st_title}.zip'
+    st.balloons()
     with open(f'{st_title}.zip', 'rb') as file:
         st.download_button(
             'Descargar ficheros', file, file_name=f'{st_title}.zip'
