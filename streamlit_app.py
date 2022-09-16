@@ -288,6 +288,8 @@ if airp != '':
             rwy_opp = f'{rwy_opp}R'
         elif rwy[-1] == 'C':
             rwy_opp = f'{rwy_opp}C'
+    else:
+        st.session_state.down_st = True
 
 # Needed data for the study is inserted
 if rwy:
