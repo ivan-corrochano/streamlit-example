@@ -334,6 +334,7 @@ if rwy:
 # METARs are obtained
 if send_sd:
     st.session_state.down_st = False
+    st.session_state.bal = False
     if len(dates) < 2:
         st.error(
             'El rango de fechas introducido no es correcto, pruebe a '
@@ -552,7 +553,9 @@ if st.session_state.down_st:
             'frustradas.csv', convert_df(st.session_state.frus)
             )
     st.session_state.zip = f'{st_title}.zip'
-    st.balloons()
+    if not st.session_state.bal:
+        st.balloons()
+        st.session_state.bal = True
     with open(f'{st_title}.zip', 'rb') as file:
         st.download_button(
             'Descargar ficheros', file, file_name=f'{st_title}.zip'
