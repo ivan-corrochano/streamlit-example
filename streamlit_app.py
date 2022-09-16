@@ -5,11 +5,11 @@ operacionales en streamlit
 
 from urllib.request import urlopen
 from time import sleep
-from boto3 import Session
 from zipfile import ZipFile
 import io
 import datetime as dt
 import locale
+from boto3 import Session
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -18,12 +18,9 @@ import streamlit as st
 SERVICE = "http://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
 MAX_ATTEMPTS = 6
 letters = ['A', 'B', 'C', 'D']
-text_act = ''
-text_prop = ''
-download_status = False
 
 
-def get_METAR(set_station, dates):
+def get_metar(set_station, metar_dates):
     '''
     timestamps in UTC to request data for
     Needed METAR data is downloaded and transformed
@@ -32,8 +29,8 @@ def get_METAR(set_station, dates):
     service = (
         f'{SERVICE}data=all&tz=Etc/UTC&format=comma&latlon=no'
         f'&missing=null&trace=null&report_type=1&report_type=2&'
-        f'{dates[0].strftime("year1=%Y&month1=%m&day1=%d&")}'
-        f'{dates[1].strftime("year2=%Y&month2=%m&day2=%d&")}'
+        f'{metar_dates[0].strftime("year1=%Y&month1=%m&day1=%d&")}'
+        f'{metar_dates[1].strftime("year2=%Y&month2=%m&day2=%d&")}'
         )
 
     data = download_data(f'{service}&station={set_station}').split("\n", 5)[-1]
@@ -50,7 +47,7 @@ def get_METAR(set_station, dates):
                 row.skyc3: row.skyl3, row.skyc4: row.skyl4
                 }),
                 axis=1),
-            RVR=data_df.apply(lambda row: get_RVR(row.metar), axis=1),
+            RVR=data_df['metar'].map(get_rvr),
             MetarTime=pd.to_datetime(data_df['valid']),
             Direccion=data_df['drct'].interpolate(),
             Vis=lambda df: df['vsby'].interpolate(),
@@ -61,7 +58,7 @@ def get_METAR(set_station, dates):
                 df['Viento']*np.sin((rwy_or - df['Direccion']) * np.pi/180),
             CAVOK=0,
             PistaViento=lambda df: df['NoseWind'].map(
-                lambda x: rwy if x >= 10 else rwy_opp
+                lambda x: RWY if x >= 10 else rwy_opp
                 )
             )
         .dropna(subset=['MetarTime'])
@@ -100,7 +97,7 @@ def download_data(uri):
             if data is not None and not data.startswith("ERROR"):
                 return data
         except Exception as exp:
-            print('Download_data(%s) failed with %s' % (uri, exp))
+            print(f'Download_data({uri}) failed with {exp}')
             sleep(5)
         attempt += 1
 
@@ -109,33 +106,38 @@ def download_data(uri):
 
 
 def get_ceil(clouds):
-    for c in clouds:
-        if c in ['BKN', 'OVC', 'VV ']:
-            return c, clouds[c]
+    '''
+    Ceil and clouds are obtained from info containing field
+    '''
+    for cloud in clouds:
+        if cloud in ['BKN', 'OVC', 'VV ']:
+            return cloud, clouds[cloud]
     return '', 10000
 
 
-def get_RVR(metar):
-    metar_list = metar.split()
+def get_rvr(metar_info):
+    '''
+    RVR is checked to exist and obtained
+    '''
+    metar_list = metar_info.split()
     for block in metar_list:
         slash = block.find('/')
         if (
-                block[1:slash] == rwy and block.count('/') == 1
-                and len(block) == len(rwy) + 7
+                block[1:slash] == RWY and block.count('/') == 1
+                and len(block) == len(RWY) + 7
                 ):
             if block[slash+1].isalpha():
                 return int(block[slash+2:])
-            else:
-                return int(block[slash+1:-1])
+            return int(block[slash+1:-1])
     return 2000
 
 
 @st.cache
-def convert_df(df):
+def convert_df(d_f):
     '''
     Important: Cache the conversion to prevent computation on every rerun
     '''
-    return df.to_csv(index=False).encode('utf-8')
+    return d_f.to_csv(index=False).encode('utf-8')
 
 
 # Change to Spanish
@@ -255,8 +257,8 @@ if 'down_st' not in st.session_state:
     st.session_state.down_st = False
 
 # An airport is selected
-rwy = False
-send_sd = False
+RWY = False
+SEND_SD = False
 
 airps = (
     [''] +
@@ -273,28 +275,28 @@ if airp != '':
             st.session_state.lig['Aeropuerto'] == airp
             ]['Pista'].str[3:].tolist()
         )
-    rwy = st.selectbox('Seleccione una pista', rwys)
-    if rwy != '':
-        rwy_int = int(rwy[:2])
+    RWY = st.selectbox('Seleccione una pista', rwys)
+    if RWY != '':
+        rwy_int = int(RWY[:2])
         rwy_or = rwy_int * 10
         if rwy_int > 18:
             rwy_opp = rwy_int - 18
         else:
             rwy_opp = rwy_int + 18
         rwy_opp = str(rwy_opp).zfill(2)
-        if rwy[-1] == 'R':
+        if RWY[-1] == 'R':
             rwy_opp = f'{rwy_opp}L'
-        elif rwy[-1] == 'L':
+        elif RWY[-1] == 'L':
             rwy_opp = f'{rwy_opp}R'
-        elif rwy[-1] == 'C':
+        elif RWY[-1] == 'C':
             rwy_opp = f'{rwy_opp}C'
     else:
         st.session_state.down_st = False
 
 # Needed data for the study is inserted
-if rwy:
+if RWY:
     with st.form(key='study_data'):
-        st_title = st.text_input("Nombre del estudio:", f'{airp}-{rwy}')
+        st_title = st.text_input("Nombre del estudio:", f'{airp}-{RWY}')
         st_date = st.text_input(
             "Fecha de entrada en vigor:",
             dt.date.today().strftime('%B_%Y').title()
@@ -327,12 +329,12 @@ if rwy:
                     )
                 )
 
-        send_sd = st.form_submit_button(
+        SEND_SD = st.form_submit_button(
             label='Enviar datos del estudio'
             )
 
 # METARs are obtained
-if send_sd:
+if SEND_SD:
     st.session_state.down_st = False
     st.session_state.bal = False
     if len(dates) < 2:
@@ -342,12 +344,12 @@ if send_sd:
             )
     else:
         with st.spinner('Obteniendo METAR'):
-            metar = get_METAR(airp, dates)
+            metar = get_metar(airp, dates)
         st.subheader('Datos METAR obtenidos')
         with st.spinner('Obtenemos datos de luces y RVR'):
             luz = st.session_state.lig.loc[
                 (st.session_state.lig['Aeropuerto'] == airp) &
-                (st.session_state.lig['Pista'] == f'RWY{rwy}')
+                (st.session_state.lig['Pista'] == f'RWY{RWY}')
                 ].iloc[0, 2]
 
             rvr_act = []
@@ -366,18 +368,10 @@ if send_sd:
                     luz
                     ].iloc[0])
 
-            for pos, let in enumerate(letters):
-                text_act += f'CAT {let}: {rvr_act[pos]}  \n'
-                text_prop += f'CAT {let}: {rvr_prop[pos]}  \n'
-
-        # st.markdown(f'Luces: {luz}')
-        # st.markdown(f'RVR mínimo actual:  \n {text_act}')
-        # st.markdown(f'RVR mínimo propuesto:  \n {text_prop}')
-
         with st.spinner('Se crea la configuracion'):
             config_data = {
                 'Aeropuerto': airp,
-                'Pista': rwy,
+                'Pista': RWY,
                 'Luces': luz,
                 'CAT_App': letters,
                 'Min_Act': min_act,
@@ -464,7 +458,7 @@ if send_sd:
                 .fillna(0)
                 )
             metar_rwy = merged_metar.loc[
-                merged_metar['PistaArr'] == f'{airp}-{rwy}'
+                merged_metar['PistaArr'] == f'{airp}-{RWY}'
                 ]
             st.session_state.merged_metar = merged_metar.copy()
             st.session_state.metar_rwy = metar_rwy.copy()
@@ -489,7 +483,7 @@ if send_sd:
                     .rename(columns={
                         'Fecha/Hora UTC': 'HoraFrustrada',
                         'Causa': 'Causa1'})
-                    .loc[lambda df: df['Pista'] == rwy]
+                    .loc[lambda df: df['Pista'] == RWY]
                     .assign(
                         HoraArribada=lambda df:
                             pd.to_datetime(df['HoraFrustrada'])
@@ -511,7 +505,6 @@ if send_sd:
                 st.session_state.frus = pd.DataFrame(
                     columns=['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']
                     )
-                st.session_state.frus = frus.copy()
                 st.warning('Enaire no cubre este aeropuerto')
             try:
                 frus['Compañia'] = frus['Indicativo'].str[:3]
