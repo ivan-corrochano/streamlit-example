@@ -519,7 +519,7 @@ if send_sd:
                 frus[['Causa1', 'Causa2']] = (
                     frus['Causa1'].str.split('_', expand=True)
                     )
-                frus.drop('Indicativo', inplace=True)
+                frus.drop('Indicativo', axis=1, inplace=True)
                 st.session_state.frus = (
                     frus[['Compañia', 'HoraFrustrada', 'Causa1', 'Causa2']]
                     .copy()
