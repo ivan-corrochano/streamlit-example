@@ -220,38 +220,38 @@ if 'asi_df' not in st.session_state:
 st.header('Herramienta para el desarrollo de estudios operacionales.')
 
 # Read Palestra.csv
-if 'palestra' not in st.session_state:
-    with st.spinner(
-            'Cargando datos para el funcionamiento de la aplicación. '
-            'Esta carga sólo se realizará una vez durante la sesión'
-            ):
-        session = Session(
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-        bucket = session.resource('s3').Bucket('proyectos-internos')
-        prefix_objs = bucket.objects.filter(
-            Prefix='Estudios_Operacionales/palestra'
-            )
-        palestra_list = []
-        for obj in prefix_objs:
-            palestra_list.append(
-                pd.read_csv(
-                    f's3://proyectos-internos/{obj.key}',
-                    storage_options={
-                        'key': AWS_ACCESS_KEY_ID,
-                        'secret': AWS_SECRET_ACCESS_KEY
-                        },
-                    usecols=[
-                        'HoraArribada', 'TipoAeronave',
-                        'ReglasVuelo', 'PistaArr'
-                        ]
-                    )
-                .dropna(subset=['HoraArribada', 'PistaArr'])
-                .loc[lambda df: df['ReglasVuelo'] != 'V']
-                .drop('ReglasVuelo', axis=1)
-                .assign(PistaArr=lambda df: df['PistaArr'].str[:8])
-                )
-        st.session_state.palestra = pd.concat(palestra_list)
+# if 'palestra' not in st.session_state:
+#     with st.spinner(
+#             'Cargando datos para el funcionamiento de la aplicación. '
+#             'Esta carga sólo se realizará una vez durante la sesión'
+#             ):
+#         session = Session(
+#             aws_access_key_id=AWS_ACCESS_KEY_ID,
+#             aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+#         bucket = session.resource('s3').Bucket('proyectos-internos')
+#         prefix_objs = bucket.objects.filter(
+#             Prefix='Estudios_Operacionales/palestra'
+#             )
+#         palestra_list = []
+#         for obj in prefix_objs:
+#             palestra_list.append(
+#                 pd.read_csv(
+#                     f's3://proyectos-internos/{obj.key}',
+#                     storage_options={
+#                         'key': AWS_ACCESS_KEY_ID,
+#                         'secret': AWS_SECRET_ACCESS_KEY
+#                         },
+#                     usecols=[
+#                         'HoraArribada', 'TipoAeronave',
+#                         'ReglasVuelo', 'PistaArr'
+#                         ]
+#                     )
+#                 .dropna(subset=['HoraArribada', 'PistaArr'])
+#                 .loc[lambda df: df['ReglasVuelo'] != 'V']
+#                 .drop('ReglasVuelo', axis=1)
+#                 .assign(PistaArr=lambda df: df['PistaArr'].str[:8])
+#                 )
+#         st.session_state.palestra = pd.concat(palestra_list)
 
 if 'down_st' not in st.session_state:
     st.session_state.down_st = False
@@ -399,8 +399,14 @@ if SEND_SD:
         st.subheader('Datos de configuracion obtenidos')
         with st.spinner('Se leen datos de Palestra'):
             palestra = (
-                st.session_state.palestra
-                .loc[st.session_state.palestra['PistaArr'].str[:4] == airp]
+                pd.read_feather(
+                    's3://proyectos-internos/Estudios_Operacionales/'
+                    f'{airp}.feather',
+                    storage_options={
+                        'key': AWS_ACCESS_KEY_ID,
+                        'secret': AWS_SECRET_ACCESS_KEY
+                        }
+                    )
                 .merge(
                     st.session_state.apc, left_on='TipoAeronave',
                     right_on='ACFT', how='left'
@@ -419,7 +425,6 @@ if SEND_SD:
                 .drop('ACFT', axis=1)
                 .sort_values('HoraArribada')
                 )
-            st.session_state.palestra_df = palestra.copy()
 
             try:
                 count_pal = (
