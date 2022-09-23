@@ -425,7 +425,7 @@ if SEND_SD:
                 .drop('ACFT', axis=1)
                 .sort_values('HoraArribada')
                 )
-            st.session_state.palestra = palestra.copy()
+            st.session_state.palestra_df = palestra.copy()
 
             try:
                 count_pal = (
